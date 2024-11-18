@@ -290,9 +290,9 @@
         const binaryImage = applyThreshold(imageData, threshold)
         showCase(rootDiv.id, imageDataToDataUrl(binaryImage), 'Binary Image')
         const blur = applyGaussianBlur(imageData, 2, 0.5)
-        showCase(rootDiv.id, imageDataToDataUrl(blur), 'Blur')
+        showCase(rootDiv.id, imageDataToDataUrl(blur), 'Gaussian Blur')
         const median = medianFilter(blur, 5)
-        showCase(rootDiv.id, imageDataToDataUrl(median), 'Median')
+        showCase(rootDiv.id, imageDataToDataUrl(median), 'Median Blur')
       }
 
       // Event listener to handle file input
