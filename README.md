@@ -2,6 +2,9 @@
 
 This project is a simple yet efficient **document scanner implemented in JavaScript**, leveraging image processing techniques to enhance scanned documents.
 
+## Live Demo
+- https://muhammedshahid.github.io/scanner/
+
 ## Key Features
 - **Binary Image Conversion**: Transforms the input image into a binary image for easier processing.
 - **Otsu's Method**: Automatically determines the optimal threshold to separate foreground (text) from the background.
