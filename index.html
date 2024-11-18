@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Histogram</title>
+    <style>
+      /* Gallery Styles */
+      /* #output-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 20px;
+      } */
+
+      div.root-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 20px;
+      }
+
+      .image-container {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .image-title {
+        font-size: 16px;
+        font-weight: bold;
+        padding: 10px;
+        background-color: #f8f8f8;
+        color: #333;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .resized-image {
+        width: 100%; /* Full width of the container */
+        height: auto; /* Maintain aspect ratio */
+        display: block;
+      }
+
+      /* Canvas Styles */
+      #canvas {
+        border: 1px solid #000;
+        margin-top: 20px;
+        max-width: 100%;
+        height: auto;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+
+      button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Binary Image with otsu Threshold</h1>
+    <input type="file" id="fileInput" accept="image/*" />
+    <div id="output-container"></div>
+
+    <script>
+      const fileInput = document.querySelector('#fileInput')
+
+      function createGroup(id) {
+        const rootDiv = document.createElement('div')
+        rootDiv.id = `root-${id}`
+        rootDiv.innerHTML = `<button>Binarize</button><div class='root-gallery'></div>`
+        document.querySelector('#output-container').appendChild(rootDiv)
+        return rootDiv.id
+      }
+
+      function showCase(rootDivId, dataURL, titleText) {
+        // Create a container div to hold the title and image
+        const container = document.createElement('div')
+        container.classList.add('image-container')
+
+        // Create a title element
+        const title = document.createElement('div')
+        title.classList.add('image-title')
+        title.textContent = titleText
+
+        // Create an image element
+        const img = document.createElement('img')
+        img.src = dataURL
+        img.alt = 'Image'
+        img.classList.add('resized-image')
+
+        // Append the title and image to the container
+        container.appendChild(title)
+        container.appendChild(img)
+
+        // Append the container to the output area
+        const rootDiv = document.getElementById(rootDivId)
+        rootDiv.querySelector('.root-gallery').appendChild(container)
+      }
+
+      function drawImgOnCanvas(img) {
+        const canvas = document.createElement('canvas')
+        // use simple height & width for faster raster
+        canvas.width = img.naturalWidth //naturalWidth
+        canvas.height = img.naturalHeight //naturalHeight
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        return canvas
+      }
+
+      function imageDataToDataUrl(imageData) {
+        // Create a canvas element
+        const canvas = document.createElement('canvas')
+        canvas.width = imageData.width
+        canvas.height = imageData.height
+        const ctx = canvas.getContext('2d')
+
+        // Put the ImageData onto the canvas
+        ctx.putImageData(imageData, 0, 0)
+
+        // Convert the canvas to a Data URL
+        const dataURL = canvas.toDataURL('image/png') // You can specify 'image/jpeg' if preferred
+        return dataURL
+      }
+
+      function otsuThreshold(imageData) {
+        const { data, width, height } = imageData
+        const histogram = new Array(256).fill(0)
+
+        // Compute histogram
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = Math.round(
+            0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+          )
+          histogram[gray]++
+        }
+
+        const totalPixels = width * height
+        let sumB = 0
+        let wB = 0
+        let maximum = 0
+        let sum1 = histogram.reduce((sum, val, i) => sum + i * val, 0)
+        let threshold = 0
+
+        // Iterate through all thresholds
+        for (let t = 0; t < 256; t++) {
+          wB += histogram[t] // Weight of background
+          if (wB === 0) continue
+
+          const wF = totalPixels - wB // Weight of foreground
+          if (wF === 0) break
+
+          sumB += t * histogram[t]
+
+          const mB = sumB / wB // Mean of background
+          const mF = (sum1 - sumB) / wF // Mean of foreground
+
+          // Between-class variance
+          const varianceBetween = wB * wF * Math.pow(mB - mF, 2)
+
+          // Check for maximum variance
+          if (varianceBetween > maximum) {
+            maximum = varianceBetween
+            threshold = t
+          }
+        }
+
+        return threshold
+      }
+
+      // Apply threshold to create a binary image
+      function applyThreshold(imageData, threshold) {
+        const { data } = imageData
+
+        for (let i = 0; i < data.length; i += 4) {
+          const gray =
+            0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+          const binaryValue = gray >= threshold ? 255 : 0
+
+          data[i] = data[i + 1] = data[i + 2] = binaryValue // Set to white or black
+        }
+
+        return imageData
+      }
+
+      // Function to apply Gaussian Blur
+      function applyGaussianBlur(imageData, radius, sigma) {
+        // radius determine kernel row & sigma determine blurness
+        // const {kernel, kernelSize} = createPascalGaussianKernel(radius, sigma)
+        const kernel = [
+          [0, 0, 0, 0, 0],
+          [0, 0, 3, 0, 0],
+          [0, 3, 36, 3, 0],
+          [0, 0, 3, 0, 0],
+          [0, 0, 0, 0, 0]
+        ]
+        const kernelSize = kernel.length
+
+        const width = imageData.width
+        const height = imageData.height
+        const data = imageData.data
+        const half = Math.floor(kernelSize / 2)
+        const kernelSum = kernel.flat().reduce((a, b) => a + b, 0)
+        const output = new Uint8ClampedArray(data.length) // copy of imagedata
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            let r = 0,
+              g = 0,
+              b = 0
+
+            for (let ky = -half; ky <= half; ky++) {
+              for (let kx = -half; kx <= half; kx++) {
+                const px = x + kx
+                const py = y + ky
+
+                if (px >= 0 && px < width && py >= 0 && py < height) {
+                  const offset = (py * width + px) * 4
+                  const weight = kernel[ky + half][kx + half]
+
+                  r += data[offset] * weight
+                  g += data[offset + 1] * weight
+                  b += data[offset + 2] * weight
+                }
+              }
+            }
+
+            const idx = (y * width + x) * 4
+            // copy of imagedata
+            output[idx] = r / kernelSum
+            output[idx + 1] = g / kernelSum
+            output[idx + 2] = b / kernelSum
+            output[idx + 3] = data[idx + 3] // Alpha remains unchanged
+            // data[idx] = r / kernelSum
+            // data[idx + 1] = g / kernelSum
+            // data[idx + 2] = b / kernelSum
+            // data[idx + 3] = data[idx + 3] // Alpha remains unchanged
+          }
+        }
+        return new ImageData(output, width, height)
+        // return imageData
+      }
+
+      function medianFilter(imageData, windowSize = 5) {
+        const { data, width, height } = imageData
+        const result = new Uint8ClampedArray(data.length)
+        const halfWindow = Math.floor(windowSize / 2)
+
+        for (let y = halfWindow; y < height - halfWindow; y++) {
+          for (let x = halfWindow; x < width - halfWindow; x++) {
+            const values = []
+
+            // Collect pixel values from the window
+            for (let wy = -halfWindow; wy <= halfWindow; wy++) {
+              for (let wx = -halfWindow; wx <= halfWindow; wx++) {
+                const idx = ((y + wy) * width + (x + wx)) * 4
+                values.push(data[idx]) // Add the grayscale intensity (RGB)
+              }
+            }
+
+            // Sort the values and take the median
+            const median = values.sort((a, b) => a - b)[
+              Math.floor(values.length / 2)
+            ]
+
+            // Set the pixel value to the median
+            const idx = (y * width + x) * 4
+            result[idx] = result[idx + 1] = result[idx + 2] = median // Set RGB
+            result[idx + 3] = 255 // Alpha
+          }
+        }
+
+        return new ImageData(result, width, height)
+      }
+
+      function binaryImage() {
+        const rootDiv = this.parentNode
+        const orgImg = rootDiv.querySelector('img')
+        const canvas = drawImgOnCanvas(orgImg)
+        const ctx = canvas.getContext('2d')
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const threshold = otsuThreshold(imageData)
+        console.log('Optimal Threshold:', threshold)
+        const binaryImage = applyThreshold(imageData, threshold)
+        showCase(rootDiv.id, imageDataToDataUrl(binaryImage), 'Binary Image')
+        const blur = applyGaussianBlur(imageData, 2, 0.5)
+        showCase(rootDiv.id, imageDataToDataUrl(blur), 'Blur')
+        const median = medianFilter(blur, 5)
+        showCase(rootDiv.id, imageDataToDataUrl(median), 'Median')
+      }
+
+      // Event listener to handle file input
+      fileInput.addEventListener('change', event => {
+        const file = event.target.files[0]
+        if (!file) return
+        const reader = new FileReader()
+
+        reader.onload = function (e) {
+          const img = new Image()
+          img.onload = function () {
+            const rootDivId = createGroup(
+              `${file.name.toLowerCase()}-${new Date().getTime()}`
+            )
+            const button = document
+              .getElementById(rootDivId)
+              .querySelector('button')
+            showCase(rootDivId, img.src, 'Original Image')
+            button.addEventListener('click', binaryImage)
+          }
+          img.src = e.target.result
+        }
+        reader.readAsDataURL(file)
+      })
+    </script>
+  </body>
+</html>
