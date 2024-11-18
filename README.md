@@ -25,3 +25,15 @@ This project is a simple yet efficient **document scanner implemented in JavaScr
 1. Clone the repository:
    ```bash
    git clone https://github.com/muhammedshahid/scanner-js.git
+## How to Use
+1. Open `index.html` in a browser.
+2. Upload an image and view the processed output.
+
+## Future Improvements
+- Add real-time scanning via webcam integration.
+- Include additional filters for color document enhancement.
+- Support for saving output in multiple formats (e.g., PDF, PNG).
+
+## Contributing
+Contributions are welcome! Feel free to submit issues or pull requests to improve the project.
+
