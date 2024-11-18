@@ -10,7 +10,7 @@ This project is a simple yet efficient **document scanner implemented in JavaScr
 - **Otsu's Method**: Automatically determines the optimal threshold to separate foreground (text) from the background.
 - **Gaussian Blur**: Applies a smoothing filter to reduce noise and improve the visual quality of the binary image.
 - **Median Blur**: Reduces noise by replacing each pixel's value with the median of its neighbors, preserving edges while improving visual quality.
-- **No Upload**: Truly leavrage the power of client side processing.
+- **No Upload**: Truly leverage the power of client side processing.
 
 ## Technologies Used
 - **JavaScript**: For implementing all the algorithms from scratch.
@@ -19,7 +19,7 @@ This project is a simple yet efficient **document scanner implemented in JavaScr
 ## How It Works
 1. **Input**: Load an image of a document (e.g., a photo or scanned copy).
 2. **Binary Image Processing**: The image is converted into a binary format using Otsu's thresholding.
-3. **Noise Reduction**: A Gaussian blur is applied to enhance the result, creating a cleaner and sharper scanned document effect.
+3. **Noise Reduction**: Gaussian blur and Median Blur is applied separately to enhance the result, creating a cleaner and sharper scanned document effect.
 4. **Output**: The processed image is displayed for download or further use.
 
 ## Use Cases
