@@ -24,4 +24,4 @@ This project is a simple yet efficient **document scanner implemented in JavaScr
 ## Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/document-scanner-js.git
+   git clone https://github.com/muhammedshahid/scanner-js.git
